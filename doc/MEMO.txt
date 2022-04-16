@@ -1,0 +1,35 @@
+npx create-react-app my-app --template cra-template-pwa
+
+1) public
+
+replace favicon.ico
+fix index.html
+   title
+   rm link logo192.png
+fix manifest.json
+   short_name:
+   name:
+   icons: (favicon.ico only)
+
+2) package.json
+
+  version: date (20220412-00)
+  homepage: "."
+
+3) src
+  index.js
+    serviceWorkerRegistration.register();
+
+  App.css align etc.
+
+  App.js -- remove log.svg, app-header
+
+4) audioworklet
+
+public/worklet/
+
+npm install esmify --save-dev
+npm install browser-resolve --save-dev
+fix Make.sh (path)
+
+
