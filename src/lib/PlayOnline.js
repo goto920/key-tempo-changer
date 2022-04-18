@@ -3,23 +3,25 @@ import MyPitchShifter from './MyPitchShifter.js';
 import MyPitchShifterWorkletNode from './MyPitchShifterWorkletNode.js';
 
 export default class PlayOnline {
-  constructor(ctx, inputAudioBuffer, useWorklet, setPlayingAt){
+  constructor(ctx, inputAudioBuffer, useWorklet, onUpdate){
 
     this.ctx = ctx;
     this.input = inputAudioBuffer; 
     this.useWorklet = useWorklet;
-    this._setPlayingAt = setPlayingAt; // callback
+    this._onUpdate = onUpdate; // callback
 
     this._gain = -6;
     this._bypass = false;
     this._tempo = 1.0;
     this._pitch = 0.0;
 
-    this._updateInterval = 1;
+    this._updateInterval = 1.0;
 
     this.source = undefined;
     this.gainNode = undefined;
     this.shifter = undefined;
+    this.timeA = undefined;
+    this.playing = false;
  
     this.init = this.init.bind(this);
     this.playAB = this.playAB.bind(this);
@@ -27,6 +29,8 @@ export default class PlayOnline {
     this.resume = this.resume.bind(this);
     this.stop = this.stop.bind(this);
   }
+
+  set updateInterval(value) {this._updateInterval = value;}
 
   set tempo(value){
     this._tempo = value;
@@ -73,7 +77,7 @@ export default class PlayOnline {
 
     const options = {
       processorOptions: {
-        bypass: this.bypass,
+        bypass: this._bypass,
         recording: false,
         nInputFrames: this.input.length,
         updateInterval: this._updateInterval,
@@ -82,7 +86,7 @@ export default class PlayOnline {
     };
 
     this.gainNode = new GainNode(this.ctx);
-    console.log('this.gain dB', this._gain);
+    // console.log('this.gain dB', this._gain);
     this.gainNode.gain.value = Math.pow(10,this._gain/20);
 
     if (!this._bypass) {
@@ -102,7 +106,6 @@ export default class PlayOnline {
       this.shifter.pitch = Math.pow(2.0, this._pitch/12);
       this.shifter.updateInterval = this._updateInterval;
     }
-
   
     return new Promise((resolve) => {
       // console.log('this.input', this.input);
@@ -136,18 +139,37 @@ export default class PlayOnline {
   async playAB(timeA, timeB){
     console.log('playAB', timeA, timeB); 
 
+    if (timeB < timeA || this.playing) return false;
+
     this.ctx.resume();
     await this.init();
 
-    if (!this.source || timeB < timeA) return false;
+    if (!this.source) return false;
 
+    this.playing = true;
+    this.timeA = timeA;
+
+    const now = this.ctx.currentTime;
+    // console.log('now', now);
     this.source.start(0, timeA, timeB-timeA);
 
-    // this.shifter.updateInterval = 10.0;
-    this.shifter.onUpdate = (val) => {
-      // requestAnimationFrame(() => console.log('time', timeA + val));
-      requestAnimationFrame(() => this._setPlayingAt(timeA + val));
-    };
+    const updateForBypass = async () => {
+      while (true) {
+        let playingAt = timeA + (this.ctx.currentTime - now);
+        if (playingAt > timeB || !this.playing) break;
+        // console.log('bypassPlayingAt', playingAt);
+        this._onUpdate(playingAt);
+        await sleep(1000*this._updateInterval);
+      };
+      // console.log ('timeUpdateLoop end');
+      this._onUpdate(timeA);
+    }
+
+    if (!this._bypass) {
+      this.shifter.onUpdate = (val) => {
+        this._onUpdate(timeA + val);
+      }
+    } else updateForBypass();
 
     return new Promise((resolve) => {
       this.source.onended = () => {
@@ -162,7 +184,11 @@ export default class PlayOnline {
 
   resume(){this.ctx.resume();}
 
-  async stop(){
+  stop(){
+    console.log('PlayOnlline.stop');
+    if (this.playing === true) this.playing = false;
+    else return;
+
     if (this.source) {
       this.source.stop();
       this.source.buffer = null;
@@ -171,6 +197,7 @@ export default class PlayOnline {
       this.shifter.stop();
       this.shifter = null;
     }
+    this._onUpdate(this.timeA);
   }
 
 };

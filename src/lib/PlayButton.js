@@ -34,25 +34,29 @@ export default class PlayButton extends Component {
            icon = 
              <span><IconButton
              onClick={() => handler({target: {name: 'startPause'}})} >
-             <PlayCircleOutlineIcon color='disabled'/>
+             <PlayCircleOutlineIcon color='disabled' 
+              fontSize='large'/>
              </IconButton></span>
          break;
          case 'Play': 
            icon = <IconButton  
              onClick={() => handler({target: {name: 'startPause'}})} >
-             <PlayCircleOutlineIcon color='primary' />
+             <PlayCircleOutlineIcon color='primary'
+              fontSize='large'/>
              </IconButton>
          break;
          case 'Resume':
            icon = <IconButton  
              onClick={() => handler({target: {name: 'startPause'}})} >
-             <PlayCircleOutlineIcon style={{color: '#00aa00' }} />
+             <PlayCircleOutlineIcon style={{color: '#00aa00' }}
+              fontSize='large'/>
              </IconButton>;
          break;
          case 'Pause': 
            icon = <IconButton  
              onClick={() => handler({target: {name: 'startPause'}})} >
-             <PauseCircleOutlineOutlinedIcon color='primary' />
+             <PauseCircleOutlineOutlinedIcon color='primary'
+              fontSize='large'/>
              </IconButton>;
          break;
          default:

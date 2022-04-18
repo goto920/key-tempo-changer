@@ -19,6 +19,8 @@ import PlayCircleFilledWhiteIcon
    from '@material-ui/icons/PlayCircleFilledWhite';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
+// others
+// import {PassiveListener} from 'react-event-injector';
 
 /*
 import NotInterestedIcon from '@material-ui/icons/NotInterested';
@@ -54,7 +56,7 @@ function App() {
   const [language,setLanguage] = useState(defaultLanguage);
   const [m, setM] = useState(
    defaultLanguage === 'ja' ? messages.ja : messages.en);
-  const [bypass,setBypass] = useState(false);
+  const [bypass,setBypass] = useState(true);
   const params = useRef({ 
      inputFileName: undefined,
      inputAudioBuffer: undefined 
@@ -64,6 +66,7 @@ function App() {
   const timeAB 
      = useRef({timeA: timeA, timeB: timeB, pitch: pitch, tempo: tempo});
   const isLoop = useRef(loop);
+  const isBypass = useRef(bypass);
 
   useEffect( () => {
     timeAB.current 
@@ -82,9 +85,15 @@ function App() {
 
       if (onlinePlayer.current) onlinePlayer.current = null;
 
+      const onUpdate = (val) => {
+        // console.log('playingAt', val);
+        setPlayingAt(val);
+        // handleTimeSlider({target: {value: val}});
+      }
+
       onlinePlayer.current 
         = new PlayOnline(ctx, params.current.inputAudioBuffer, 
-          useWorklet && isAudioWorkletAvailable, setPlayingAt); 
+          useWorklet && isAudioWorkletAvailable, onUpdate); 
     }
 
   } // loadFile
@@ -139,15 +148,19 @@ function App() {
   };
 
   const changeVolume = (e) => {
+    e.preventDefault();
     const newGain = parseInt(e.target.value);
     setVolume(newGain);
     if (onlinePlayer.current) onlinePlayer.current.gain = newGain;
   };
 
-  const handlePlay = async (e) => {
+  // const handlePlay = (e) => {
+   const handlePlay = async (e) => {
+    //e.preventDefault();
 
     console.log('nextAction:', playButtonNextAction);
     const player = onlinePlayer.current;
+
     const t = timeAB.current;
 
     if (e.target.name === 'startPause'){ // PlayButton
@@ -155,11 +168,14 @@ function App() {
 
       switch(playButtonNextAction) {
         case 'Play': 
+          setPlayButtonNextAction('Pause');
           player.pitch = t.pitch;
           player.tempo = t.tempo;
+          player.bypass = isBypass.current;
+          player.updateInterval = 1.0; 
+
           await player.playAB(t.timeA,t.timeB);
-          while(isLoop.current) {
-            console.log('Loop');
+          while(isLoop.current){
             await sleep(2000);
             await player.playAB(t.timeA,t.timeB);
           }
@@ -181,7 +197,7 @@ function App() {
     if (e.target.name === 'stop'){ // StopButton
       if (player) {
         console.log('player stopped');
-        player.stop();
+        player.stop(); setPlayingAt(t.timeA);
         isLoop.current = false;
       }
       setPlayButtonNextAction('Play');
@@ -190,6 +206,7 @@ function App() {
   }
 
   const switchLanguage = (e) => {
+    e.preventDefault();
     if (language === 'ja') {
       setLanguage('en'); setM(messages.en);
     } else { 
@@ -198,23 +215,11 @@ function App() {
   };
 
   const handleTimeSlider = (e) => {
-    const currentTime = parseFloat(e.target.value);
-    setPlayingAt(currentTime);
+    // console.log('time onChange');
+    // const currentTime = parseFloat(e.target.value);
+    setPlayingAt(parseFloat(e.target.value));
   }
 
-/*
-  const setTimeAB = (e) => {
-    if (e.target.id === 'setTimeA') {
-      console.log('setTimeA',playingAt);
-      setTimeA(playingAt);
-    }
-    if (e.target.id === 'setTimeB') {
-      console.log('setTimeB',playingAt);
-      setTimeB(playingAt);
-    }
-  };
-*/
- 
   return (
     <div className="App">
 
@@ -225,12 +230,15 @@ function App() {
 */}
     </h3>
     <div className='text-divider'>Select File</div>
+      <div>
        <input type="file" accept="audio/*,video/*" 
        onChange={loadFile}/>
+      </div>
     <div className='text-divider'>Playing (
-       {('00000' + playingAt.toFixed(0)).slice(-3)}
+       {('00000' + playingAt.toFixed(1)).slice(-5)}
     )
     </div>
+      <div>
        A: {('00000' + timeA.toFixed(2)).slice(-6)}&emsp;
        B: {('00000' + timeB.toFixed(2)).slice(-6)}&emsp;
        length:&nbsp; 
@@ -238,11 +246,12 @@ function App() {
         ('00000' 
            + params.current.inputAudioBuffer.duration.toFixed(2)).slice(-6) 
          : 'undefined' }
+      </div>
     <div>
     <input type="range" value={playingAt} min={0.0} step={0.01}
        max={params.current.inputAudioBuffer ? 
              params.current.inputAudioBuffer.duration : 0.0} 
-       onChange={handleTimeSlider}
+             onChange={handleTimeSlider}
        style={{width: '90%'}}/>
     </div>
     <div>
@@ -263,7 +272,8 @@ function App() {
    {/* Export */}
     Export:<IconButton onClick = {processOfflineAndExport}>
       <GetAppIcon 
-       color={playButtonNextAction === 'NotReady' ? 'disabled': 'primary'} />
+       color={playButtonNextAction === 'NotReady' ? 'disabled': 'primary'} 
+       fontSize='large' />
     </IconButton>
     </div>
     <div>
@@ -275,18 +285,21 @@ function App() {
        nextAction={playButtonNextAction}
        handler={handlePlay}
        messages={m}
-    />&emsp;
+    />&nbsp;
    {/* Stop button */}
      Stop:
      <IconButton onClick={() => handlePlay({target: {name: 'stop'}})} >
-       <StopOutlinedIcon/>
+       <StopOutlinedIcon fontSize='large' 
+       color={playButtonNextAction === 'NotReady' ? 'disabled': 'primary'} />
      </IconButton>
-     &emsp;
+     &nbsp;
    {/* Loop/repeat */ }
-     Loop/off:
+     Loop on/off:
      <IconButton onClick={() => 
         {isLoop.current=!loop; setLoop(!loop);}}>
-       <LoopOutlinedIcon color={loop ? 'secondary' : 'primary'}/>
+       <LoopOutlinedIcon fontSize='large'
+         color={playButtonNextAction === 'NotReady' ?
+            'disabled' : (loop ? 'secondary' : 'primary')}/>
      </IconButton>
     </center>
     </div>
@@ -296,7 +309,10 @@ function App() {
        min={-36} max={12} step={1} style={{width: '90%'}}/>
     </center>
     <div className='text-divider'>Key/Tempo Controls:&emsp;
-      <button onClick={(e) => setBypass(!bypass)}>
+      <button onClick={(e) => {
+        isBypass.current = !isBypass.current;
+        setBypass(!bypass);
+     }}>
       {bypass ? 'Enable' : 'Disable'}</button>
     </div>
 
