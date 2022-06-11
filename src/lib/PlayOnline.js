@@ -172,9 +172,16 @@ export default class PlayOnline {
     } else updateForBypass();
 
     return new Promise((resolve) => {
-      this.source.onended = () => {
-        this.stop();
-        resolve(true);
+      if (!this._bypass) {
+        this.shifter.onEnd = () => {
+          this.stop();
+          resolve(true);
+        };
+      } else {
+        this.source.onended = () => {
+          this.stop();
+          resolve(true);
+        }
       }
     });
 

@@ -19,14 +19,21 @@ import PlayCircleFilledWhiteIcon
    from '@material-ui/icons/PlayCircleFilledWhite';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
+import VolumeUpIcon from '@material-ui/icons/VolumeUp';
+import VolumeDownIcon from '@material-ui/icons/VolumeDown';
+import {Slider} from '@material-ui/core';
+
 // others
 // import {PassiveListener} from 'react-event-injector';
+//import debounce from 'lodash/debounce';
+// import throttle from 'lodash/throttle';
+// import InputRange from 'react-input-range;
 
 /*
 import NotInterestedIcon from '@material-ui/icons/NotInterested';
 import MoodIcon from '@material-ui/icons/Mood';
-*/
 import MicIcon from '@material-ui/icons/Mic';
+*/
 
 
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -47,10 +54,11 @@ function App() {
   const [tempo, setTempo] = useState(1.0);
   const [isRepeat, setIsRepeat] = useState(false);
   const [playingAt, setPlayingAt] = useState(0.0);
+  const [playingAtSlider, setPlayingAtSlider] = useState(0.0);
   const [timeA, setTimeA] = useState(0.0);
   const [timeB, setTimeB] = useState(0.0);
   const [loop, setLoop] = useState(false);
-  const [volume, setVolume] = useState(-6); // in dB
+  const [volume, setVolume] = useState([-6]); // in dB
   const [playButtonNextAction, setPlayButtonNextAction] 
            = useState('NotReady'); /* Play, Resume, Pause */ 
   const [language,setLanguage] = useState(defaultLanguage);
@@ -88,8 +96,8 @@ function App() {
       const onUpdate = (val) => {
         // console.log('playingAt', val);
         setPlayingAt(val);
-        // handleTimeSlider({target: {value: val}});
-      }
+        // setPlayingAtSlider(val);
+      };
 
       onlinePlayer.current 
         = new PlayOnline(ctx, params.current.inputAudioBuffer, 
@@ -147,16 +155,14 @@ function App() {
     if (onlinePlayer.current) onlinePlayer.current.tempo = newTempo;
   };
 
-  const changeVolume = (e) => {
-    e.preventDefault();
+  const changeVolume = (e,data) => {
     const newGain = parseInt(e.target.value);
-    setVolume(newGain);
-    if (onlinePlayer.current) onlinePlayer.current.gain = newGain;
+    setVolume(data);
+    if (onlinePlayer.current) onlinePlayer.current.gain = data[0];
   };
 
   // const handlePlay = (e) => {
    const handlePlay = async (e) => {
-    //e.preventDefault();
 
     console.log('nextAction:', playButtonNextAction);
     const player = onlinePlayer.current;
@@ -206,7 +212,6 @@ function App() {
   }
 
   const switchLanguage = (e) => {
-    e.preventDefault();
     if (language === 'ja') {
       setLanguage('en'); setM(messages.en);
     } else { 
@@ -215,9 +220,8 @@ function App() {
   };
 
   const handleTimeSlider = (e) => {
-    // console.log('time onChange');
-    // const currentTime = parseFloat(e.target.value);
-    setPlayingAt(parseFloat(e.target.value));
+    // setPlayingAt(parseFloat(e.target.value));
+      setPlayingAtSlider(parseFloat(e.target.value));
   }
 
   return (
@@ -248,11 +252,14 @@ function App() {
          : 'undefined' }
       </div>
     <div>
-    <input type="range" value={playingAt} min={0.0} step={0.01}
+    <meter min={0} max={params.current.inputAudioBuffer ?
+          params.current.inputAudioBuffer.duration : 0.0}
+      value={playingAt} style = {{width: '90%'}}/>
+    <input type="range" value={playingAtSlider} min={0} step={1.0}
        max={params.current.inputAudioBuffer ? 
              params.current.inputAudioBuffer.duration : 0.0} 
              onChange={handleTimeSlider}
-       style={{width: '90%'}}/>
+       style={{width: '90%'}} />
     </div>
     <div>
     <center>
@@ -303,10 +310,15 @@ function App() {
      </IconButton>
     </center>
     </div>
-    <div className='text-divider'>Volume ({volume}dB)</div>
     <center>
-    <input type="range" value={volume} onChange={changeVolume} 
-       min={-36} max={12} step={1} style={{width: '90%'}}/>
+    <VolumeDownIcon />
+    <Slider value={volume} max={12} min={-24} onChange={changeVolume}
+    style={{width: '70%'}} /> 
+    <VolumeUpIcon />&nbsp;{volume[0]}dB
+{/*
+    <input type="range" value={volume} max={12} min={-24} 
+    onChange={changeVolume} \>
+*/}
     </center>
     <div className='text-divider'>Key/Tempo Controls:&emsp;
       <button onClick={(e) => {
