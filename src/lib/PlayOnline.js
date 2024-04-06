@@ -1,4 +1,4 @@
-import {sleep} from './sleep.js';
+// import {sleep} from './sleep.js';
 import MyPitchShifter from './MyPitchShifter.js';
 import MyPitchShifterWorkletNode from './MyPitchShifterWorkletNode.js';
 
@@ -15,7 +15,7 @@ export default class PlayOnline {
     this._tempo = 1.0;
     this._pitch = 0.0;
 
-    this._updateInterval = 1.0;
+//    this._updateInterval = 1.0;
 
     this.source = undefined;
     this.gainNode = undefined;
@@ -32,9 +32,8 @@ export default class PlayOnline {
 
   set updateInterval(value) {this._updateInterval = value;}
 
-  set tempo(value){
+  set tempo(value) {
     this._tempo = value;
-    // if (this.shifter) this.shifter.tempo = value;
     if (this.shifter) {
       if (this._tempo <= 1.0) {
         this.source.playbackRate.value = 1.0;
@@ -90,7 +89,6 @@ export default class PlayOnline {
     this.gainNode.gain.value = Math.pow(10,this._gain/20);
 
     if (!this._bypass) {
-
       if (this.useWorklet && await this.loadModule()){
         this.shifter = new MyPitchShifterWorkletNode(this.ctx,
           'my-soundtouch-processor', options); 
@@ -102,9 +100,7 @@ export default class PlayOnline {
         console.log('using ScriptProcessorNode');
       }
 
-      this.shifter.tempo = this._tempo; // initial
-      this.shifter.pitch = Math.pow(2.0, this._pitch/12);
-      this.shifter.updateInterval = this._updateInterval;
+//      this.shifter.updateInterval = this._updateInterval;
     }
   
     return new Promise((resolve) => {
@@ -137,7 +133,6 @@ export default class PlayOnline {
   }
 
   async playAB(timeA, timeB){
-    console.log('playAB', timeA, timeB); 
 
     if (timeB < timeA || this.playing) return false;
 
@@ -145,6 +140,18 @@ export default class PlayOnline {
     await this.init();
 
     if (!this.source) return false;
+
+    if (this.shifter) {
+      if (this._tempo <= 1.0) {
+        this.source.playbackRate.value = 1.0;
+        this.shifter.tempo = this._tempo;
+        this.shifter.pitch = Math.pow(2,this._pitch/12);
+      } else {
+        this.source.playbackRate.value = this._tempo;
+        this.shifter.tempo = 1.0;
+        this.shifter.pitch = Math.pow(2,this._pitch/12)/this._tempo;
+      }
+    }
 
     this.playing = true;
     this.timeA = timeA;
@@ -154,6 +161,7 @@ export default class PlayOnline {
     this.source.start(0, timeA, timeB-timeA);
 
     const updateForBypass = async () => {
+/*
       while (true) {
         let playingAt = timeA + (this.ctx.currentTime - now);
         if (playingAt > timeB || !this.playing) break;
@@ -161,9 +169,21 @@ export default class PlayOnline {
         this._onUpdate(playingAt);
         await sleep(1000*this._updateInterval);
       };
+*/
+      let anim = undefined;
+        const loop = () => {
+        let playingAt = timeA + (this.ctx.currentTime - now);
+        if (playingAt > timeB || !this.playing) {
+          if (anim) cancelAnimationFrame(anim);
+        } else {
+          this._onUpdate(playingAt);
+          anim = requestAnimationFrame(loop);
+        }
+      }; // end loop definition
+      anim = requestAnimationFrame(loop);
       // console.log ('timeUpdateLoop end');
       this._onUpdate(timeA);
-    }
+    }; // end updateForBypass
 
     if (!this._bypass) {
       this.shifter.onUpdate = (val) => {

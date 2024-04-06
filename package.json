@@ -1,6 +1,6 @@
 {
   "name": "key-tempo-changer",
-  "version": "20220418-00",
+  "version": "20240406-00",
   "private": true,
   "homepage": ".",
   "dependencies": {
@@ -13,7 +13,7 @@
     "file-saver": "^2.0.5",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
-    "react-scripts": "5.0.0",
+    "react-scripts": "^5.0.1",
     "soundtouchjs": "^0.1.29",
     "web-vitals": "^0.2.4",
     "workbox-background-sync": "^5.1.4",
@@ -54,7 +54,9 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@babel/plugin-transform-private-property-in-object": "^7.24.1",
     "browser-resolve": "^2.0.0",
-    "esmify": "^2.1.1"
+    "esmify": "^0.1.2"
   }
 }

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from  'react';
+// import React, { useState, useRef, useCallback, useEffect } from  'react';
+import React, { useState, useRef, useEffect } from  'react';
 import './App.css';
 import packageJSON from '../package.json';
 import messages from './messages.json';
@@ -15,8 +16,7 @@ import { IconButton } from '@material-ui/core';
 import StopOutlinedIcon from '@material-ui/icons/StopOutlined';
 import LoopOutlinedIcon from '@material-ui/icons/LoopOutlined';
 import GetAppIcon from '@material-ui/icons/GetApp';
-import PlayCircleFilledWhiteIcon 
-   from '@material-ui/icons/PlayCircleFilledWhite';
+// import PlayCircleFilledWhiteIcon from '@material-ui/icons/PlayCircleFilledWhite';
 import AddIcon from '@material-ui/icons/Add';
 import RemoveIcon from '@material-ui/icons/Remove';
 import VolumeUpIcon from '@material-ui/icons/VolumeUp';
@@ -49,10 +49,10 @@ function App() {
         = checkAudioWorklet();
   const [useWorklet,setUseWorklet] = useState(true);
   const ctx = new AudioContext();
-  const [inputBuffer, setInputBuffer] = useState();
+ // const [inputBuffer, setInputBuffer] = useState();
   const [pitch, setPitch] = useState(0.0);
   const [tempo, setTempo] = useState(1.0);
-  const [isRepeat, setIsRepeat] = useState(false);
+  // const [isRepeat, setIsRepeat] = useState(false);
   const [playingAt, setPlayingAt] = useState(0.0);
   const [playingAtSlider, setPlayingAtSlider] = useState(0.0);
   const [timeA, setTimeA] = useState(0.0);
@@ -61,7 +61,7 @@ function App() {
   const [volume, setVolume] = useState([-6]); // in dB
   const [playButtonNextAction, setPlayButtonNextAction] 
            = useState('NotReady'); /* Play, Resume, Pause */ 
-  const [language,setLanguage] = useState(defaultLanguage);
+  const [language, setLanguage] = useState(defaultLanguage);
   const [m, setM] = useState(
    defaultLanguage === 'ja' ? messages.ja : messages.en);
   const [bypass,setBypass] = useState(true);
@@ -156,7 +156,7 @@ function App() {
   };
 
   const changeVolume = (e,data) => {
-    const newGain = parseInt(e.target.value);
+  //  const newGain = parseInt(e.target.value);
     setVolume(data);
     if (onlinePlayer.current) onlinePlayer.current.gain = data[0];
   };
@@ -178,12 +178,13 @@ function App() {
           player.pitch = t.pitch;
           player.tempo = t.tempo;
           player.bypass = isBypass.current;
-          player.updateInterval = 1.0; 
+          // player.updateInterval = 1.0; 
 
-          await player.playAB(t.timeA,t.timeB);
+          await player.playAB(t.timeA/t.tempo,t.timeB/t.tempo);
+
           while(isLoop.current){
             await sleep(2000);
-            await player.playAB(t.timeA,t.timeB);
+            await player.playAB(t.timeA/t.tempo,t.timeB/t.tempo);
           }
           setPlayButtonNextAction('Play');
         break;
@@ -325,7 +326,7 @@ function App() {
         isBypass.current = !isBypass.current;
         setBypass(!bypass);
      }}>
-      {bypass ? 'Enable' : 'Disable'}</button>
+      {bypass ? 'Show' : 'Hide'}</button>
     </div>
 
     {!bypass &&
