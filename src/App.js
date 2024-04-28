@@ -236,7 +236,7 @@ function App() {
     </h3>
     <div className='text-divider'>Select File</div>
       <div>
-       <input type="file" accept="audio/*,video/*" 
+       <input type="file" accept="audio/*,.wav,.mp3,.aac,.m4a,.opus,.webm,video/*,.mp4" 
        onChange={loadFile}/>
       </div>
     <div className='text-divider'>Playing (
